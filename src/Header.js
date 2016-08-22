@@ -3,49 +3,62 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 // TODO: rename all header-related things to "toolbar"
 
-function Header(calendar, options) {
+function Header(calendar) {
 	var t = this;
 	
 	// exports
 	t.render = render;
-	t.destroy = destroy;
+	t.removeElement = removeElement;
 	t.updateTitle = updateTitle;
 	t.activateButton = activateButton;
 	t.deactivateButton = deactivateButton;
 	t.disableButton = disableButton;
 	t.enableButton = enableButton;
 	t.getViewsWithButtons = getViewsWithButtons;
+	t.el = null; // mirrors local `el`
 	
 	// locals
-	var el = $();
+	var el;
 	var viewsWithButtons = [];
 	var tm;
 
 
+	// can be called repeatedly and will rerender
 	function render() {
+		var options = calendar.options;
 		var sections = options.header;
 
 		tm = options.theme ? 'ui' : 'fc';
 
 		if (sections) {
-			el = $("<div class='fc-toolbar'/>")
-				.append(renderSection('left'))
+			if (!el) {
+				el = this.el = $("<div class='fc-toolbar'/>");
+			}
+			else {
+				el.empty();
+			}
+			el.append(renderSection('left'))
 				.append(renderSection('right'))
 				.append(renderSection('center'))
 				.append('<div class="fc-clear"/>');
-
-			return el;
+		}
+		else {
+			removeElement();
 		}
 	}
 	
 	
-	function destroy() {
-		el.remove();
+	function removeElement() {
+		if (el) {
+			el.remove();
+			el = t.el = null;
+		}
 	}
 	
 	
 	function renderSection(position) {
 		var sectionEl = $('<div class="fc-' + position + '"/>');
+		var options = calendar.options;
 		var buttonStr = options.header[position];
 
 		if (buttonStr) {
@@ -55,6 +68,7 @@ function Header(calendar, options) {
 				var groupEl;
 
 				$.each(this.split(','), function(j, buttonName) {
+					var customButtonProps;
 					var viewSpec;
 					var buttonClick;
 					var overrideText; // text explicitly set by calendar's constructor options. overcomes icons
@@ -63,16 +77,23 @@ function Header(calendar, options) {
 					var normalIcon;
 					var innerHtml;
 					var classes;
-					var button;
+					var button; // the element
 
 					if (buttonName == 'title') {
 						groupChildren = groupChildren.add($('<h2>&nbsp;</h2>')); // we always want it to take up height
 						isOnlyButtons = false;
 					}
 					else {
-						viewSpec = calendar.getViewSpec(buttonName);
-
-						if (viewSpec) {
+						if ((customButtonProps = (options.customButtons || {})[buttonName])) {
+							buttonClick = function(ev) {
+								if (customButtonProps.click) {
+									customButtonProps.click.call(button[0], ev);
+								}
+							};
+							overrideText = ''; // icons will override text
+							defaultText = customButtonProps.text;
+						}
+						else if ((viewSpec = calendar.getViewSpec(buttonName))) {
 							buttonClick = function() {
 								calendar.changeView(buttonName);
 							};
@@ -90,8 +111,15 @@ function Header(calendar, options) {
 
 						if (buttonClick) {
 
-							themeIcon = options.themeButtonIcons[buttonName];
-							normalIcon = options.buttonIcons[buttonName];
+							themeIcon =
+								customButtonProps ?
+									customButtonProps.themeIcon :
+									options.themeButtonIcons[buttonName];
+
+							normalIcon =
+								customButtonProps ?
+									customButtonProps.icon :
+									options.buttonIcons[buttonName];
 
 							if (overrideText) {
 								innerHtml = htmlEscape(overrideText);
@@ -117,11 +145,11 @@ function Header(calendar, options) {
 									innerHtml +
 								'</button>'
 								)
-								.click(function() {
+								.click(function(ev) {
 									// don't process clicks for disabled buttons
 									if (!button.hasClass(tm + '-state-disabled')) {
 
-										buttonClick();
+										buttonClick(ev);
 
 										// after the click action, if the button becomes the "active" tab, or disabled,
 										// it should never have a hover class, so remove it now.
@@ -192,33 +220,43 @@ function Header(calendar, options) {
 	
 	
 	function updateTitle(text) {
-		el.find('h2').text(text);
+		if (el) {
+			el.find('h2').text(text);
+		}
 	}
 	
 	
 	function activateButton(buttonName) {
-		el.find('.fc-' + buttonName + '-button')
-			.addClass(tm + '-state-active');
+		if (el) {
+			el.find('.fc-' + buttonName + '-button')
+				.addClass(tm + '-state-active');
+		}
 	}
 	
 	
 	function deactivateButton(buttonName) {
-		el.find('.fc-' + buttonName + '-button')
-			.removeClass(tm + '-state-active');
+		if (el) {
+			el.find('.fc-' + buttonName + '-button')
+				.removeClass(tm + '-state-active');
+		}
 	}
 	
 	
 	function disableButton(buttonName) {
-		el.find('.fc-' + buttonName + '-button')
-			.attr('disabled', 'disabled')
-			.addClass(tm + '-state-disabled');
+		if (el) {
+			el.find('.fc-' + buttonName + '-button')
+				.prop('disabled', true)
+				.addClass(tm + '-state-disabled');
+		}
 	}
 	
 	
 	function enableButton(buttonName) {
-		el.find('.fc-' + buttonName + '-button')
-			.removeAttr('disabled')
-			.removeClass(tm + '-state-disabled');
+		if (el) {
+			el.find('.fc-' + buttonName + '-button')
+				.prop('disabled', false)
+				.removeClass(tm + '-state-disabled');
+		}
 	}
 
 

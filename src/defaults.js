@@ -1,7 +1,7 @@
 
 Calendar.defaults = {
 
-	titleRangeSeparator: ' \u2014 ', // emphasized dash
+	titleRangeSeparator: ' \u2013 ', // en dash
 	monthYearFormat: 'MMMM YYYY', // required for en. other languages rely on datepicker computable option
 
 	defaultTimedEventDuration: '02:00:00',
@@ -24,6 +24,10 @@ Calendar.defaults = {
 	weekNumberCalculation: 'local',
 	
 	//editable: false,
+
+	//nowIndicator: false,
+
+	scrollTime: '06:00:00',
 	
 	// event ajax
 	lazyFetching: true,
@@ -75,13 +79,17 @@ Calendar.defaults = {
 	
 	dropAccept: '*',
 
+	eventOrder: 'title',
+
 	eventLimit: false,
 	eventLimitText: 'more',
 	eventLimitClick: 'popover',
 	dayPopoverFormat: 'LL',
 	
 	handleWindowResize: true,
-	windowResizeDelay: 200 // milliseconds before an updateSize happens
+	windowResizeDelay: 100, // milliseconds before an updateSize happens
+
+	longPressDelay: 1000
 	
 };
 

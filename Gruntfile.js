@@ -1,8 +1,5 @@
 
 module.exports = function(grunt) {
-
-	var _ = require('underscore');
-
 	// Load required NPM tasks.
 	// You must first run `npm install` in the project's root directory to get these dependencies.
 	grunt.loadNpmTasks('grunt-contrib-concat');
@@ -12,12 +9,12 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
-	grunt.loadNpmTasks('grunt-jscs-checker');
+	grunt.loadNpmTasks('grunt-jscs');
 	grunt.loadNpmTasks('grunt-shell');
 	grunt.loadNpmTasks('grunt-karma');
 	grunt.loadNpmTasks('grunt-bump');
 	grunt.loadNpmTasks('lumbar');
-	
+
 	// This will eventually get passed to grunt.initConfig()
 	// Initialize multitasks...
 	var config = {
@@ -43,13 +40,13 @@ module.exports = function(grunt) {
 		'clean',
 		'modules',
 		'languages',
+		'check',
 		'karma:single',
 		'archiveDist'
 	]);
 
 	// Bare minimum for debugging
 	grunt.registerTask('dev', [
-		'shell:assume-unchanged',
 		'lumbar:build',
 		'languages'
 	]);
@@ -98,7 +95,8 @@ module.exports = function(grunt) {
 	// create minified versions of JS
 	config.uglify.modules = {
 		options: {
-			preserveComments: 'some' // keep comments starting with /*!
+			preserveComments: /(?:^!|@(?:license|preserve|cc_on))/ // keep certain comments
+				// https://github.com/gruntjs/grunt-contrib-uglify/issues/366#issuecomment-157208530
 		},
 		expand: true,
 		src: 'dist/fullcalendar.js', // only do it for fullcalendar.js
@@ -168,8 +166,8 @@ module.exports = function(grunt) {
 			configFile: 'build/karma.conf.js'
 		},
 		url: {}, // visit a URL in a browser
-		headless: { browsers: [ 'PhantomJS' ] },
-		single: { browsers: [ 'PhantomJS' ], singleRun: true, autoWatch: false }
+		headless: { browsers: [ 'PhantomJS_custom' ] },
+		single: { browsers: [ 'PhantomJS_custom' ], singleRun: true, autoWatch: false }
 	};
 
 
@@ -274,8 +272,9 @@ module.exports = function(grunt) {
 	// copy license and changelog
 	config.copy.archiveMisc = {
 		files: {
-			'build/temp/archive/license.txt': 'license.txt',
-			'build/temp/archive/changelog.txt': 'changelog.md'
+			'build/temp/archive/LICENSE.txt': 'LICENSE.txt',
+			'build/temp/archive/CHANGELOG.txt': 'CHANGELOG.md',
+			'build/temp/archive/CONTRIBUTING.txt': 'CONTRIBUTING.md'
 		}
 	};
 
@@ -303,76 +302,13 @@ module.exports = function(grunt) {
 	config.bump = { // changes the version number in the configs
 		options: {
 			files: [
-				'package.json',
-				'bower.json'
+				'package.json'
 			],
 			commit: false,
 			createTag: false,
 			push: false
 		}
 	};
-
-
-
-	/* CDNJS (http://cdnjs.com/)
-	----------------------------------------------------------------------------------------------------*/
-
-	grunt.registerTask('cdnjs', 'Build files for CDNJS\'s hosted version of FullCalendar', [
-		'clean:cdnjs',
-		'modules',
-		'languages',
-		'karma:single',
-		'cdnjsDist'
-	]);
-
-	grunt.registerTask('cdnjsDist', [
-		'copy:cdnjsModules',
-		'copy:cdnjsLanguages',
-		'copy:cdnjsLanguagesAll',
-		'cdnjsConfig'
-	]);
-
-	config.copy.cdnjsModules = {
-		expand: true,
-		cwd: 'dist/',
-		src: [ '*.js', '*.css' ],
-		dest: 'dist/cdnjs/<%= meta.version %>/'
-	};
-
-	config.copy.cdnjsLanguages = {
-		expand: true,
-		cwd: 'dist/lang/',
-		src: '*.js',
-		dest: 'dist/cdnjs/<%= meta.version %>/lang/'
-	};
-
-	config.copy.cdnjsLanguagesAll = {
-		src: 'dist/lang-all.js',
-		dest: 'dist/cdnjs/<%= meta.version %>/lang-all.js'
-	};
-
-	grunt.registerTask('cdnjsConfig', function() {
-		var config = grunt.file.readJSON('package.json');
-
-		// things that CDNJS doesn't need
-		delete config.devDependencies;
-		delete config.main;
-		delete config.files;
-		delete config.ignore;
-
-		_.extend(config, grunt.file.readJSON('build/cdnjs.json')); // CDNJS-specific settings
-
-		grunt.file.write(
-			'dist/cdnjs/package.json',
-			JSON.stringify(
-				config,
-				null, // replace
-				2 // indent
-			)
-		);
-	});
-
-	config.clean.cdnjs = 'dist/cdnjs';
 
 
 
@@ -389,24 +325,6 @@ module.exports = function(grunt) {
 	// configs located elsewhere
 	config.jshint = require('./build/jshint.conf');
 	config.jscs = require('./build/jscs.conf');
-
-
-
-	/* dist & git hacks
-	----------------------------------------------------------------------------------------------------
-	// These shell commands are used to force/unforce git from thinking that files have changed.
-	// Used to ignore changes when dist files are overwritten, but not committed, during development.
-	*/
-
-	config.shell['assume-unchanged'] = {
-		command: 'git update-index --assume-unchanged `git ls-files dist`'
-	};
-	config.shell['no-assume-unchanged'] = {
-		command: 'git update-index --no-assume-unchanged `git ls-files dist`'
-	};
-	config.shell['list-assume-unchanged'] = {
-		command: 'git ls-files -v | grep \'^h\''
-	};
 
 
 

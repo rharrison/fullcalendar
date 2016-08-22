@@ -39,7 +39,11 @@ describe('lang', function() {
 		expect(moment.lang()).toEqual('fr');
 	});
 
-	it('defaults to English when configured to language that isn\'t loaded', function() {
+	// the most recent version of moment will actually throw a cryptic exception,
+	// and instead of papering over this, just let it be thrown. will indicate that something
+	// needs to be fixed to the developer.
+	/*
+	xit('defaults to English when configured to language that isn\'t loaded', function() {
 		affix('#cal');
 		$('#cal').fullCalendar({
 			lang: 'zz'
@@ -49,6 +53,7 @@ describe('lang', function() {
 		var s = mom.format('dddd MMMM Do YYYY');
 		expect(s).toEqual('Thursday May 1st 2014');
 	});
+	*/
 
 	it('works when certain language has no FC settings defined', function() {
 		affix('#cal');
@@ -62,6 +67,21 @@ describe('lang', function() {
 		});
 		expect($('.fc-day-header:first')).toHaveText('Sun 12-21');
 		expect($('.fc-event .fc-time')).toHaveText('10:00');
+	});
+
+	it('allows dynamic setting', function() {
+		affix('#cal');
+		$('#cal').fullCalendar({
+			lang: 'es',
+			defaultDate: '2016-07-10',
+			defaultView: 'month'
+		});
+		expect($('.fc h2')).toHaveText('julio 2016');
+		expect($('.fc')).not.toHaveClass('fc-rtl');
+
+		$('#cal').fullCalendar('option', 'lang', 'ar');
+		expect($('.fc h2')).toHaveText('تموز يوليو ٢٠١٦');
+		expect($('.fc')).toHaveClass('fc-rtl');
 	});
 
 });
